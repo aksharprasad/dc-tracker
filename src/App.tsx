@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Zap, ShieldCheck, Calendar, BarChart2, List, TrendingUp } from 'lucide-react';
 import { useStore } from './store';
@@ -8,9 +8,8 @@ import LogModal from './components/LogModal';
 import StatCard from './components/StatCard';
 import Chart from './components/Chart';
 import EventLog from './components/EventLog';
-import BubbleField from './components/BubbleField';
 import FizzEffect from './components/FizzEffect';
-import StreakBadge from './components/StreakBadge';
+import CanCharacter from './components/CanCharacter';
 
 type Tab = 'dashboard' | 'log';
 
@@ -21,11 +20,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [fizzTrigger, setFizzTrigger] = useState(0);
   const [fizzType, setFizzType] = useState<EventType | null>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
+  const [lastAction, setLastAction] = useState<EventType | null>(null);
 
   const stats = getStats(events);
   const chartData = getLast30DaysChart(events);
-  const { resistStreak, soberDays } = getStreaks(events);
+  const { resistStreak } = getStreaks(events);
+
+  const totalDrank = events.filter(e => e.type === 'drank').length;
+  const totalResisted = events.filter(e => e.type === 'resisted').length;
 
   const openModal = (type: EventType) => {
     setModalType(type);
@@ -34,13 +36,10 @@ export default function App() {
 
   const handleSubmit = (type: EventType, reason: string, notes: string) => {
     addEvent(type, reason, notes);
+    setLastAction(type);
     setFizzType(type);
     setFizzTrigger(t => t + 1);
-    if (activeTab !== 'dashboard') setActiveTab('dashboard');
   };
-
-  const totalDrank = events.filter(e => e.type === 'drank').length;
-  const totalResisted = events.filter(e => e.type === 'resisted').length;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -52,58 +51,59 @@ export default function App() {
         onSubmit={handleSubmit}
       />
 
-      {/* Header */}
-      <header ref={headerRef} className="relative border-b border-zinc-800/60 overflow-hidden">
-        <BubbleField active={true} />
-        <div className="relative z-10 max-w-2xl mx-auto px-4 pt-10 pb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-6 h-6 rounded-full bg-[#e8001d] flex items-center justify-center">
-                <span className="text-white text-xs font-black">DC</span>
-              </div>
-              <span className="text-xs text-zinc-600 uppercase tracking-widest font-medium">Diet Coke Tracker</span>
-            </div>
-            <h1 className="text-3xl font-bold text-zinc-100 mb-4">
-              Your Diet Coke<br />
-              <span className="text-[#e8001d]">habit</span>, tracked.
-            </h1>
-
-            <StreakBadge resistStreak={resistStreak} soberDays={soberDays} />
-          </motion.div>
-        </div>
-      </header>
-
-      {/* CTA Buttons */}
-      <div className="max-w-2xl mx-auto px-4">
+      {/* Wordmark */}
+      <div className="flex justify-center pt-8 pb-2">
         <motion.div
-          className="flex gap-3 -mt-0 py-5"
-          initial={{ opacity: 0, y: 12 }}
+          className="flex items-center gap-2"
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="w-5 h-5 rounded-full bg-[#e8001d] flex items-center justify-center">
+            <span className="text-white text-[9px] font-black leading-none">DC</span>
+          </div>
+          <span className="text-xs text-zinc-600 uppercase tracking-widest font-medium">Diet Coke Tracker</span>
+        </motion.div>
+      </div>
+
+      {/* Hero — The Can */}
+      <section className="flex flex-col items-center pt-4 pb-6 px-4">
+        <CanCharacter
+          resistStreak={resistStreak}
+          trigger={fizzTrigger}
+          lastAction={lastAction}
+        />
+      </section>
+
+      {/* Action Buttons */}
+      <div className="max-w-sm mx-auto px-4 pb-6">
+        <motion.div
+          className="grid grid-cols-2 gap-3"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
         >
           <button
             onClick={() => openModal('drank')}
-            className="flex-1 flex items-center justify-center gap-2.5 py-4 bg-[#e8001d] hover:bg-[#c5001a] active:scale-95 text-white font-semibold rounded-2xl transition-all text-sm"
+            className="flex items-center justify-center gap-2 py-4 bg-[#e8001d] hover:bg-[#c5001a] active:scale-95 text-white font-semibold rounded-2xl transition-all text-sm"
           >
-            <Zap size={16} />
+            <Zap size={15} />
             I Drank One
           </button>
           <button
             onClick={() => openModal('resisted')}
-            className="flex-1 flex items-center justify-center gap-2.5 py-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold rounded-2xl transition-all text-sm"
+            className="flex items-center justify-center gap-2 py-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold rounded-2xl transition-all text-sm"
           >
-            <ShieldCheck size={16} />
+            <ShieldCheck size={15} />
             I Resisted
           </button>
         </motion.div>
       </div>
 
-      {/* Tab nav */}
-      <div className="max-w-2xl mx-auto px-4">
+      {/* Stats + Chart + Log */}
+      <div className="max-w-2xl mx-auto px-4 pb-16">
+
+        {/* Tab nav */}
         <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1 mb-5">
           {(['dashboard', 'log'] as Tab[]).map(tab => (
             <button
@@ -120,21 +120,18 @@ export default function App() {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 pb-16">
         {activeTab === 'dashboard' && (
           <motion.div
             key="dashboard"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
           >
-            {/* Total lifetime */}
+            {/* All-time */}
             <motion.div
               className="flex items-center justify-between p-4 bg-zinc-900 border border-zinc-800 rounded-2xl mb-4"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
             >
@@ -156,35 +153,17 @@ export default function App() {
 
             {/* Stat cards */}
             <div className="grid grid-cols-3 gap-3 mb-5">
-              <StatCard
-                label="Today"
-                drank={stats.today.drank}
-                resisted={stats.today.resisted}
-                icon={Calendar}
-                delay={0.1}
-              />
-              <StatCard
-                label="This Week"
-                drank={stats.week.drank}
-                resisted={stats.week.resisted}
-                icon={Calendar}
-                delay={0.15}
-              />
-              <StatCard
-                label="This Month"
-                drank={stats.month.drank}
-                resisted={stats.month.resisted}
-                icon={Calendar}
-                delay={0.2}
-              />
+              <StatCard label="Today"      drank={stats.today.drank}  resisted={stats.today.resisted}  icon={Calendar} delay={0.08} />
+              <StatCard label="This Week"  drank={stats.week.drank}   resisted={stats.week.resisted}   icon={Calendar} delay={0.12} />
+              <StatCard label="This Month" drank={stats.month.drank}  resisted={stats.month.resisted}  icon={Calendar} delay={0.16} />
             </div>
 
             {/* Chart */}
             <motion.div
               className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-5"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
+              transition={{ delay: 0.2 }}
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-zinc-300">Last 14 days</h2>
@@ -193,12 +172,12 @@ export default function App() {
               <Chart data={chartData} />
             </motion.div>
 
-            {/* Recent events preview */}
+            {/* Recent */}
             <motion.div
               className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.25 }}
             >
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-sm font-semibold text-zinc-300">Recent entries</h2>
@@ -219,7 +198,7 @@ export default function App() {
             key="log"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
           >
             <div className="flex items-center justify-between mb-4">
