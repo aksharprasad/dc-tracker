@@ -330,19 +330,39 @@ export default function CanCharacter({ resistStreak, trigger, lastAction }: Prop
       {/* The can */}
       <motion.div
         className="w-28 h-44 cursor-pointer"
+        style={{ transformOrigin: 'center center' }}
         animate={
+          // Crumple: hard vertical squish + side wobble, like you crushed it
           animState === 'hurt'
-            ? { x: [0, -9, 9, -7, 7, -4, 4, 0], y: 0 }
-            : animState === 'celebrating'
-            ? { y: [0, -22, 0, -14, 0, -8, 0], rotate: [0, 11, -11, 8, -8, 4, -4, 0] }
-            : { y: [0, -7, 0] }
+            ? {
+                scaleX: [1, 1.38, 0.84, 1.22, 0.91, 1.06, 0.98, 1],
+                scaleY: [1, 0.52, 1.18, 0.74, 1.08, 0.94, 1.02, 1],
+                x:      [0, -6,   6,   -4,   4,   -2,   1,   0],
+                rotate: [0, -5,   5,   -3,   2,   -1,   0.5, 0],
+              }
+          // Bloat: inflate like carbonation is building, then launch up with joy
+          : animState === 'celebrating'
+            ? {
+                scaleX: [1, 1.24, 0.88, 1.14, 0.93, 1.04, 1],
+                scaleY: [1, 1.18, 0.84, 1.10, 0.95, 1.02, 1],
+                y:      [0,   -4, -24,   -10,  -18,   -4,  0],
+                rotate: [0,    5, -10,     7,   -4,    1,  0],
+              }
+          // Idle: gentle float + slight sway
+          : {
+              y:      [0, -7, 0],
+              rotate: [0, 1.2, 0, -1.2, 0],
+            }
         }
         transition={
           animState === 'idle'
-            ? { y: { repeat: Infinity, duration: 2.6, ease: 'easeInOut' } }
+            ? {
+                y:      { repeat: Infinity, duration: 2.6, ease: 'easeInOut' },
+                rotate: { repeat: Infinity, duration: 3.5, ease: 'easeInOut' },
+              }
             : animState === 'hurt'
-            ? { duration: 0.45, ease: 'easeInOut' }
-            : { duration: 0.85, ease: 'easeInOut' }
+            ? { duration: 0.65, ease: [0.36, 0.07, 0.19, 0.97] }
+            : { duration: 0.95, ease: [0.16, 1, 0.3, 1] }
         }
         onClick={() => setSpeechText(pickRandom(MOOD_MESSAGES[mood]))}
         title="Click me"
